@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>위키 Higher or Lower X 가챠!</title>
+    <style>
+        body { font-family: sans-serif; max-width: 1000px; margin: 30px auto; text-align: center; background-color: #f4f4f9; color: #333; }
+        .container { display: flex; gap: 20px; justify-content: center; }
+        .main-panel { flex: 2; }
+        .side-panel { flex: 1; background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-height: 600px; overflow-y: auto; }
+        
+        /* 대결 인클로저 */
+        .battle-ground { display: flex; gap: 15px; justify-content: space-between; margin-top: 20px; }
+        .wiki-card { flex: 1; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); min-height: 250px; display: flex; flex-direction: column; justify-content: space-between; }
+        .wiki-card.right-card { border: 2px dashed #008CBA; }
+        
+        button { padding: 10px 15px; font-size: 15px; cursor: pointer; background-color: #4CAF50; color: white; border: none; border-radius: 5px; font-weight: bold; }
+        button:hover { background-color: #45a049; }
+        .btn-choice { font-size: 18px; padding: 15px 30px; margin: 5px; width: 45%; }
+        .btn-higher { background-color: #e74c3c; } /* High (빨강) */
+        .btn-lower { background-color: #3498db; }  /* Low (파랑) */
+        .btn-gacha { background-color: #e67e22; width: 100%; margin-top: 10px; font-size: 18px; padding: 12px; }
+        
+        .score-board { font-size: 24px; font-weight: bold; color: #2c3e50; margin-bottom: 10px; }
+        .point-count { color: #e67e22; }
+        .inventory-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; margin: 5px 0; border: 1px solid #ddd; border-radius: 5px; font-size: 13px; }
+        .rarity-SSR { color: #9b59b6; font-weight: bold; }
+        .rarity-SR { color: #e74c3c; font-weight: bold; }
+        .rarity-R { color: #3498db; font-weight: bold; }
+        .active-card-banner { background: #f1c40f; padding: 10px; border-radius: 5px; font-weight: bold; margin-bottom: 15px; }
+        .text-length { font-size: 24px; font-weight: bold; color: #2ecc71; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <h1>📊 위키백과 Higher or Lower X 가챠!</h1>
+    <div class="score-board">보유 포인트: <span id="points" class="point-count">100</span> P</div>
+    
+    <div class="container">
+        <div class="main-panel">
+            <div id="active-card-display" class="active-card-banner">장착된 카드 없음 (보너스 1.0x)</div>
+            
+            <div class="battle-ground">
+                <div class="wiki-card">
+                    <div>
+                        <span style="color:#7f8c8d; font-size:12px;">[기준 문서]</span>
+                        <h2 id="left-title">로딩 중...</h2>
+                        <p id="left-extract" style="text-align:left; font-size:14px; color:#555;"></p>
+                    </div>
+                    <div class="text-length">글자 수: <span id="left-length">-</span> 자</div>
+                </div>
+
+                <div class="wiki-card right-card">
+                    <div>
+                        <span style="color:#7f8c8d; font-size:12px;">[비교 문서]</span>
+                        <h2 id="right-title">???</h2>
+                        <p id="right-extract" style="text-align:left; font-size:14px; color:#555;">이 문서는 왼쪽 문서보다 본문이 더 길까요, 짧을까요?</p>
+                    </div>
+                    <div id="choice-area">
+                        <button onclick="submitChoice('Higher')" class="btn-choice btn-higher">⬆️ 더 길다 (Higher)</button>
+                        <button onclick="submitChoice('Lower')" class="btn-choice btn-lower">⬇️ 더 짧다 (Lower)</button>
+                    </div>
+                    <div id="right-length-area" class="text-length" style="display:none;">글자 수: <span id="right-length">-</span> 자</div>
+                </div>
+            </div>
+
+            <div id="result-message" style="margin-top:20px; font-weight:bold; font-size:22px; min-height: 30px;"></div>
+            <button id="next-btn" onclick="startNewGame()" style="margin-top:10px; display:none; background-color:#2c3e50;">다음 라운드 진행하기 ➡️</button>
+        </div>
+
+        <div class="side-panel">
+            <h3>🎲 상점 & 가챠</h3>
+            <button onclick="pullGacha()" class="btn-gacha">✨ 1회 뽑기 (100P)</button>
+            <div id="gacha-result" style="margin-top: 10px; font-weight: bold; font-size:14px;"></div>
+            
+            <h3 style="margin-top:30px;">🎒 내 카드 인벤토리</h3>
+            <div id="inventory-list">인벤토리가 비어 있습니다.</div>
+        </div>
+    </div>
+
+    <script>
+        // 처음 로드 시 게임 시작
+        window.onload = startNewGame;
+
+        async function startNewGame() {
+            document.getElementById('result-message').innerText = "";
+            document.getElementById('next-btn').style.display = "none";
+            document.getElementById('choice-area').style.display = "block";
+            document.getElementById('right-length-area').style.display = "none";
+            document.getElementById('right-title').innerText = "???";
+            document.getElementById('right-extract').innerText = "이 문서는 왼쪽 문서보다 본문이 더 길까요, 짧을까요?";
+
+            try {
+                const response = await fetch('/api/new-game');
+                const data = await response.json();
+                
+                // 왼쪽 카드 정보 세팅 (글자 수 바로 공개)
+                document.getElementById('left-title').innerText = data.left_title;
+                document.getElementById('left-extract').innerText = data.left_extract;
+                document.getElementById('left-length').innerText = data.left_len;
+
+                // 오른쪽 카드 정보 미리 세팅 (제목과 본문 요약만 힌트로 제공)
+                document.getElementById('right-title').innerText = data.right_title;
+                document.getElementById('right-extract').innerText = data.right_extract;
+
+                document.getElementById('points').innerText = data.points;
+                if(data.active_card) {
+                    document.getElementById('active-card-display').innerText = `✨ 장착 중: [${data.active_card.rarity}] ${data.active_card.title} (${data.active_card.bonus_multiplier}x 배율)`;
+                }
+            } catch (e) {
+                document.getElementById('result-message').innerText = "게임 데이터를 가져오지 못했습니다.";
+            }
+        }
+
+        async function submitChoice(userChoice) {
+            const response = await fetch('/api/submit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_choice: userChoice })
+            });
+            const data = await response.json();
+            
+            // 결과 연출
+            document.getElementById('choice-area').style.display = "none";
+            document.getElementById('right-length-area').style.display = "block";
+            document.getElementById('right-length').innerText = data.right_len;
+
+            const resEl = document.getElementById('result-message');
+            if(data.is_correct) {
+                resEl.innerText = `🎉 정답입니다! (+${data.earned_points}P 획득)`;
+                resEl.style.color = "green";
+            } else {
+                resEl.innerText = `❌ 틀렸습니다! (-5P)`;
+                resEl.style.color = "red";
+            }
+
+            document.getElementById('points').innerText = data.points;
+            document.getElementById('next-btn').style.display = "inline-block";
+        }
+
+        async function pullGacha() {
+            const response = await fetch('/api/gacha', { method: 'POST' });
+            const data = await response.json();
+            
+            const resEl = document.getElementById('gacha-result');
+            if(!data.success) {
+                resEl.innerText = `⚠️ ${data.message}`;
+                resEl.style.color = "red";
+                return;
+            }
+
+            const card = data.card;
+            resEl.innerHTML = `🎁 획득: <span class="rarity-${card.rarity}">[${card.rarity}] ${card.title}</span> (배율: ${card.bonus_multiplier}x)`;
+            document.getElementById('points').innerText = data.points;
+            
+            updateInventory(data.inventory);
+        }
+
+        async function equipCard(index) {
+            await fetch('/api/equip', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ index: index })
+            });
+            startNewGame();
+        }
+
+        function updateInventory(list) {
+            const invEl = document.getElementById('inventory-list');
+            if(list.length === 0) {
+                invEl.innerText = "인벤토리가 비어 있습니다.";
+                return;
+            }
+            invEl.innerHTML = "";
+            list.forEach((card, idx) => {
+                invEl.innerHTML += `
+                    <div class="inventory-item">
+                        <span class="rarity-${card.rarity}">[${card.rarity}] ${card.title}</span>
+                        <button onclick="equipCard(${idx})" style="padding:3px 7px; font-size:11px; background:#34495e;">장착</button>
+                    </div>
+                `;
+            });
+        }
+    </script>
+</body>
+</html>
