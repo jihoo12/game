@@ -1,185 +1,719 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <title>위키 Higher or Lower X 가챠!</title>
-    <style>
-        body { font-family: sans-serif; max-width: 1000px; margin: 30px auto; text-align: center; background-color: #f4f4f9; color: #333; }
-        .container { display: flex; gap: 20px; justify-content: center; }
-        .main-panel { flex: 2; }
-        .side-panel { flex: 1; background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-height: 600px; overflow-y: auto; }
-        
-        /* 대결 인클로저 */
-        .battle-ground { display: flex; gap: 15px; justify-content: space-between; margin-top: 20px; }
-        .wiki-card { flex: 1; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); min-height: 250px; display: flex; flex-direction: column; justify-content: space-between; }
-        .wiki-card.right-card { border: 2px dashed #008CBA; }
-        
-        button { padding: 10px 15px; font-size: 15px; cursor: pointer; background-color: #4CAF50; color: white; border: none; border-radius: 5px; font-weight: bold; }
-        button:hover { background-color: #45a049; }
-        .btn-choice { font-size: 18px; padding: 15px 30px; margin: 5px; width: 45%; }
-        .btn-higher { background-color: #e74c3c; } /* High (빨강) */
-        .btn-lower { background-color: #3498db; }  /* Low (파랑) */
-        .btn-gacha { background-color: #e67e22; width: 100%; margin-top: 10px; font-size: 18px; padding: 12px; }
-        
-        .score-board { font-size: 24px; font-weight: bold; color: #2c3e50; margin-bottom: 10px; }
-        .point-count { color: #e67e22; }
-        .inventory-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; margin: 5px 0; border: 1px solid #ddd; border-radius: 5px; font-size: 13px; }
-        .rarity-SSR { color: #9b59b6; font-weight: bold; }
-        .rarity-SR { color: #e74c3c; font-weight: bold; }
-        .rarity-R { color: #3498db; font-weight: bold; }
-        .active-card-banner { background: #f1c40f; padding: 10px; border-radius: 5px; font-weight: bold; margin-bottom: 15px; }
-        .text-length { font-size: 24px; font-weight: bold; color: #2ecc71; margin-top: 10px; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>위키배틀</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&family=Black+Han+Sans&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #07080f;
+    --bg2:       #0d0f1c;
+    --panel:     #111527;
+    --border:    #1e2440;
+    --gold:      #e8c860;
+    --gold-dim:  #8a6f20;
+    --silver:    #9ab0c8;
+    --red:       #e84040;
+    --green:     #38d98a;
+    --text:      #c8d4e8;
+    --text-dim:  #5a6880;
+    --N:  #7a8899;  --N-bg:  #1a1f2a;
+    --R:  #3d9aff;  --R-bg:  #0d1e38;
+    --SR: #b060ff;  --SR-bg: #1a0a30;
+    --SSR:#e8c860;  --SSR-bg:#201800;
+    --Fire:  #ff6030; --Water: #30a0ff; --Wind:  #30e8a0;
+    --Earth: #c0882a; --Dark:  #9040d0; --Light: #f0e050;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans KR', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ─── BG stars ─── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background:
+      radial-gradient(1px 1px at 10% 15%, rgba(200,210,240,.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at 30% 70%, rgba(200,210,240,.3) 0%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 55% 30%, rgba(200,210,240,.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 75% 85%, rgba(200,210,240,.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 90% 20%, rgba(200,210,240,.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at 15% 90%, rgba(200,210,240,.2) 0%, transparent 100%),
+      radial-gradient(1px 1px at 42% 50%, rgba(200,210,240,.25) 0%, transparent 100%),
+      radial-gradient(1px 1px at 68% 60%, rgba(200,210,240,.3) 0%, transparent 100%);
+  }
+
+  /* ─── Header ─── */
+  header {
+    position: relative; z-index: 10;
+    text-align: center;
+    padding: 2.5rem 1rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(20,10,40,.8) 0%, transparent 100%);
+  }
+  header h1 {
+    font-family: 'Black Han Sans', sans-serif;
+    font-size: clamp(2rem, 6vw, 3.5rem);
+    letter-spacing: .15em;
+    background: linear-gradient(135deg, #e8c860 0%, #fff0a0 50%, #c09030 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    text-shadow: none;
+    filter: drop-shadow(0 0 18px rgba(232,200,96,.45));
+  }
+  header h1 span { font-size: .45em; vertical-align: middle; margin-right: .3em; filter: none; -webkit-text-fill-color: var(--gold); }
+  .gem-bar {
+    display: inline-flex; align-items: center; gap: .5rem;
+    margin-top: .9rem;
+    background: var(--panel); border: 1px solid var(--border);
+    padding: .4rem 1.2rem; border-radius: 99px;
+    font-family: 'Nanum Myeongjo', serif;
+    font-size: 1rem; font-weight: 700;
+    color: var(--gold);
+  }
+  .gem-bar .gem-icon { font-size: 1.2em; }
+  #gem-count { transition: color .3s; }
+
+  /* ─── Nav tabs ─── */
+  nav {
+    position: relative; z-index: 10;
+    display: flex; justify-content: center; gap: .25rem;
+    padding: .75rem 1rem;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+  }
+  .tab-btn {
+    font-family: 'Black Han Sans', sans-serif;
+    font-size: .9rem; letter-spacing: .08em;
+    padding: .5rem 1.6rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: transparent; color: var(--text-dim);
+    cursor: pointer; transition: all .2s;
+  }
+  .tab-btn:hover { color: var(--text); border-color: var(--silver); }
+  .tab-btn.active {
+    background: linear-gradient(135deg, #1a1230, #0e1030);
+    border-color: var(--gold-dim); color: var(--gold);
+    box-shadow: 0 0 12px rgba(232,200,96,.15);
+  }
+
+  /* ─── Sections ─── */
+  .section { display: none; position: relative; z-index: 5; max-width: 960px; margin: 0 auto; padding: 2rem 1rem 4rem; }
+  .section.active { display: block; }
+
+  /* ─── Section headings ─── */
+  .section-title {
+    font-family: 'Nanum Myeongjo', serif;
+    font-size: 1.4rem; font-weight: 800;
+    color: var(--silver);
+    border-left: 3px solid var(--gold-dim);
+    padding-left: .75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  /* ─── Gacha section ─── */
+  .gacha-actions {
+    display: flex; flex-wrap: wrap; gap: 1rem;
+    justify-content: center; margin-bottom: 2rem;
+  }
+  .gacha-btn {
+    font-family: 'Black Han Sans', sans-serif;
+    font-size: 1rem; letter-spacing: .1em;
+    padding: .9rem 2.5rem;
+    border: none; border-radius: 6px;
+    cursor: pointer; position: relative; overflow: hidden;
+    transition: transform .15s, box-shadow .15s;
+  }
+  .gacha-btn:active { transform: scale(.97); }
+  .gacha-btn.single {
+    background: linear-gradient(135deg, #1e2c5a, #0e1840);
+    color: #70a0ff;
+    border: 1px solid #2a3870;
+    box-shadow: 0 0 18px rgba(80,120,255,.12);
+  }
+  .gacha-btn.single:hover { box-shadow: 0 0 28px rgba(80,120,255,.3); }
+  .gacha-btn.ten {
+    background: linear-gradient(135deg, #2a1040, #180828);
+    color: var(--gold);
+    border: 1px solid var(--gold-dim);
+    box-shadow: 0 0 18px rgba(232,200,96,.12);
+  }
+  .gacha-btn.ten:hover { box-shadow: 0 0 28px rgba(232,200,96,.3); }
+  .gacha-btn::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.06), transparent);
+    transform: translateX(-100%); transition: transform .4s;
+  }
+  .gacha-btn:hover::after { transform: translateX(100%); }
+  .gacha-cost { font-size: .72em; opacity: .7; display: block; }
+  .pity-info {
+    text-align: center;
+    font-size: .8rem; color: var(--text-dim);
+    margin-bottom: 2rem;
+  }
+  .pity-info span { color: var(--silver); }
+
+  /* ─── Gacha result area ─── */
+  #gacha-result {
+    min-height: 180px;
+    display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center;
+  }
+
+  /* ─── Card ─── */
+  .card {
+    width: 170px;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    cursor: pointer;
+    transition: transform .2s, box-shadow .2s;
+    animation: cardReveal .4s ease both;
+  }
+  .card:hover { transform: translateY(-6px) scale(1.03); }
+
+  @keyframes cardReveal {
+    from { opacity: 0; transform: translateY(20px) scale(.92); }
+    to   { opacity: 1; transform: translateY(0)   scale(1); }
+  }
+
+  .card-inner {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    height: 100%;
+  }
+
+  .card.N  .card-inner { background: var(--N-bg);   border-color: var(--N);  box-shadow: 0 0 10px rgba(122,136,153,.15); }
+  .card.R  .card-inner { background: var(--R-bg);   border-color: var(--R);  box-shadow: 0 0 14px rgba(61,154,255,.2); }
+  .card.SR .card-inner { background: var(--SR-bg);  border-color: var(--SR); box-shadow: 0 0 18px rgba(176,96,255,.3); }
+  .card.SSR .card-inner { background: var(--SSR-bg); border-color: var(--gold); box-shadow: 0 0 24px rgba(232,200,96,.4); animation: ssrPulse 2.5s ease infinite; }
+
+  @keyframes ssrPulse {
+    0%,100% { box-shadow: 0 0 24px rgba(232,200,96,.4); }
+    50%      { box-shadow: 0 0 42px rgba(232,200,96,.7); }
+  }
+
+  .card-header {
+    padding: .6rem .7rem .4rem;
+    display: flex; justify-content: space-between; align-items: flex-start;
+  }
+  .rarity-badge {
+    font-family: 'Black Han Sans', sans-serif;
+    font-size: .75rem; padding: .15rem .45rem;
+    border-radius: 3px; letter-spacing: .08em;
+  }
+  .card.N  .rarity-badge { background: var(--N);  color: #07080f; }
+  .card.R  .rarity-badge { background: var(--R);  color: #07080f; }
+  .card.SR .rarity-badge { background: var(--SR); color: #fff; }
+  .card.SSR .rarity-badge { background: var(--gold); color: #07080f; }
+
+  .element-badge {
+    font-size: .7rem; padding: .15rem .4rem;
+    border-radius: 3px;
+    font-weight: 500;
+  }
+  .elem-Fire  { background: rgba(255,96,48,.2);  color: var(--Fire);  border: 1px solid rgba(255,96,48,.4); }
+  .elem-Water { background: rgba(48,160,255,.2); color: var(--Water); border: 1px solid rgba(48,160,255,.4); }
+  .elem-Wind  { background: rgba(48,232,160,.2); color: var(--Wind);  border: 1px solid rgba(48,232,160,.4); }
+  .elem-Earth { background: rgba(192,136,42,.2); color: var(--Earth); border: 1px solid rgba(192,136,42,.4); }
+  .elem-Dark  { background: rgba(144,64,208,.2); color: var(--Dark);  border: 1px solid rgba(144,64,208,.4); }
+  .elem-Light { background: rgba(240,224,80,.2); color: var(--Light); border: 1px solid rgba(240,224,80,.4); }
+
+  .card-title {
+    padding: 0 .7rem .5rem;
+    font-family: 'Nanum Myeongjo', serif;
+    font-size: .8rem; font-weight: 700;
+    color: #e8eeff;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  .card-art {
+    height: 90px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 3.5rem;
+    background: rgba(0,0,0,.25);
+    border-top: 1px solid rgba(255,255,255,.04);
+    border-bottom: 1px solid rgba(255,255,255,.04);
+  }
+
+  .card-stats {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 0;
+    padding: .4rem .55rem .5rem;
+    font-size: .7rem; color: var(--text-dim);
+  }
+  .stat { display: flex; align-items: center; gap: .25rem; padding: .12rem 0; }
+  .stat-label { color: var(--text-dim); font-size: .65rem; }
+  .stat-val { color: var(--text); font-weight: 500; }
+
+  .card-skill {
+    padding: .3rem .7rem .5rem;
+    font-size: .68rem; color: var(--text-dim);
+    border-top: 1px solid rgba(255,255,255,.04);
+  }
+  .skill-name { color: var(--silver); font-weight: 500; font-size: .72rem; }
+
+  /* ─── Deck section ─── */
+  #deck-grid {
+    display: flex; flex-wrap: wrap; gap: 1rem; justify-content: flex-start;
+  }
+  .deck-empty {
+    text-align: center; color: var(--text-dim);
+    padding: 3rem; width: 100%;
+    font-family: 'Nanum Myeongjo', serif; font-size: 1rem;
+  }
+
+  /* ─── Battle section ─── */
+  .battle-select {
+    display: flex; flex-wrap: wrap; gap: .5rem;
+    margin-bottom: 1.5rem; align-items: center;
+  }
+  .battle-select select {
+    flex: 1; min-width: 200px;
+    background: var(--panel); border: 1px solid var(--border);
+    color: var(--text); padding: .6rem .9rem;
+    border-radius: 5px; font-family: 'Noto Sans KR', sans-serif;
+    font-size: .9rem; cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%235a6880' fill='none' stroke-width='1.5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right .75rem center;
+    padding-right: 2rem;
+  }
+  .start-btn {
+    font-family: 'Black Han Sans', sans-serif;
+    font-size: .95rem; letter-spacing: .1em;
+    padding: .65rem 2rem;
+    background: linear-gradient(135deg, #380a0a, #200404);
+    border: 1px solid #7a1010;
+    color: #ff8080; border-radius: 5px; cursor: pointer;
+    transition: box-shadow .2s;
+  }
+  .start-btn:hover { box-shadow: 0 0 20px rgba(255,60,60,.25); }
+
+  #battle-arena {
+    display: none;
+  }
+  #battle-arena.active { display: block; }
+
+  .arena-field {
+    display: grid; grid-template-columns: 1fr 60px 1fr;
+    gap: .75rem; align-items: center;
+    margin-bottom: 1.5rem;
+  }
+  .combatant { text-align: center; }
+  .combatant-label {
+    font-family: 'Black Han Sans', sans-serif;
+    font-size: .75rem; letter-spacing: .12em;
+    color: var(--text-dim); margin-bottom: .5rem;
+  }
+  .combatant-label.player { color: var(--green); }
+  .combatant-label.enemy  { color: var(--red); }
+
+  .hp-bar-wrap {
+    margin-top: .6rem;
+    background: rgba(0,0,0,.4); border-radius: 99px;
+    height: 8px; overflow: hidden; border: 1px solid var(--border);
+  }
+  .hp-bar {
+    height: 100%; border-radius: 99px;
+    transition: width .4s ease;
+  }
+  .hp-bar.player { background: linear-gradient(90deg, #28a060, #38d98a); }
+  .hp-bar.enemy  { background: linear-gradient(90deg, #a02828, #e84040); }
+  .hp-text { font-size: .75rem; color: var(--text-dim); margin-top: .25rem; }
+
+  .vs-text {
+    font-family: 'Black Han Sans', sans-serif;
+    font-size: 1.6rem; color: var(--gold);
+    text-align: center; opacity: .6;
+  }
+
+  .battle-actions {
+    display: flex; gap: .75rem; flex-wrap: wrap; margin-bottom: 1.5rem;
+  }
+  .action-btn {
+    flex: 1; min-width: 90px;
+    font-family: 'Black Han Sans', sans-serif;
+    font-size: .9rem; letter-spacing: .08em;
+    padding: .7rem .5rem;
+    border-radius: 6px; cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--text-dim);
+    transition: all .18s;
+  }
+  .action-btn:hover { color: var(--text); }
+  .action-btn.atk:hover { border-color: var(--red); color: var(--red); box-shadow: 0 0 14px rgba(232,64,64,.2); }
+  .action-btn.skl:hover { border-color: var(--gold); color: var(--gold); box-shadow: 0 0 14px rgba(232,200,96,.2); }
+  .action-btn.def:hover { border-color: var(--silver); color: var(--silver); box-shadow: 0 0 14px rgba(154,176,200,.15); }
+  .action-btn:disabled { opacity: .35; cursor: not-allowed; }
+
+  #battle-log {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 8px; padding: 1rem; max-height: 220px;
+    overflow-y: auto; font-size: .82rem; line-height: 1.7;
+  }
+  #battle-log::-webkit-scrollbar { width: 5px; }
+  #battle-log::-webkit-scrollbar-track { background: transparent; }
+  #battle-log::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+  .log-entry { padding: .1rem 0; border-bottom: 1px solid rgba(255,255,255,.03); }
+  .log-entry:last-child { border: none; }
+
+  .battle-result {
+    text-align: center; padding: 1.5rem;
+    font-family: 'Nanum Myeongjo', serif;
+    font-size: 1.1rem; font-weight: 700;
+    border-radius: 8px; margin-top: 1rem;
+  }
+  .battle-result.win  { background: rgba(56,217,138,.07); border: 1px solid rgba(56,217,138,.3); color: var(--green); }
+  .battle-result.lose { background: rgba(232,64,64,.07);  border: 1px solid rgba(232,64,64,.3);  color: var(--red); }
+
+  /* ─── Notification toast ─── */
+  #toast {
+    position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: var(--panel); border: 1px solid var(--border);
+    padding: .6rem 1.6rem; border-radius: 99px;
+    font-size: .85rem; color: var(--text);
+    transition: transform .3s ease;
+    pointer-events: none; z-index: 100;
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* ─── Loading spinner ─── */
+  .spinner {
+    display: inline-block; width: 20px; height: 20px;
+    border: 2px solid var(--border); border-top-color: var(--gold);
+    border-radius: 50%; animation: spin .7s linear infinite;
+    vertical-align: middle; margin-right: .4rem;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ─── Responsive ─── */
+  @media (max-width: 600px) {
+    .card { width: 145px; }
+    .arena-field { grid-template-columns: 1fr 40px 1fr; }
+  }
+</style>
 </head>
 <body>
-    <h1>📊 위키백과 Higher or Lower X 가챠!</h1>
-    <div class="score-board">보유 포인트: <span id="points" class="point-count">100</span> P</div>
-    
-    <div class="container">
-        <div class="main-panel">
-            <div id="active-card-display" class="active-card-banner">장착된 카드 없음 (보너스 1.0x)</div>
-            
-            <div class="battle-ground">
-                <div class="wiki-card">
-                    <div>
-                        <span style="color:#7f8c8d; font-size:12px;">[기준 문서]</span>
-                        <h2 id="left-title">로딩 중...</h2>
-                        <p id="left-extract" style="text-align:left; font-size:14px; color:#555;"></p>
-                    </div>
-                    <div class="text-length">글자 수: <span id="left-length">-</span> 자</div>
-                </div>
 
-                <div class="wiki-card right-card">
-                    <div>
-                        <span style="color:#7f8c8d; font-size:12px;">[비교 문서]</span>
-                        <h2 id="right-title">???</h2>
-                        <p id="right-extract" style="text-align:left; font-size:14px; color:#555;">이 문서는 왼쪽 문서보다 본문이 더 길까요, 짧을까요?</p>
-                    </div>
-                    <div id="choice-area">
-                        <button onclick="submitChoice('Higher')" class="btn-choice btn-higher">⬆️ 더 길다 (Higher)</button>
-                        <button onclick="submitChoice('Lower')" class="btn-choice btn-lower">⬇️ 더 짧다 (Lower)</button>
-                    </div>
-                    <div id="right-length-area" class="text-length" style="display:none;">글자 수: <span id="right-length">-</span> 자</div>
-                </div>
-            </div>
+<header>
+  <h1><span>🃏</span>위키배틀</h1>
+  <div class="gem-bar"><span class="gem-icon">💎</span> <span id="gem-count">—</span> 젬</div>
+</header>
 
-            <div id="result-message" style="margin-top:20px; font-weight:bold; font-size:22px; min-height: 30px;"></div>
-            <button id="next-btn" onclick="startNewGame()" style="margin-top:10px; display:none; background-color:#2c3e50;">다음 라운드 진행하기 ➡️</button>
-        </div>
+<nav>
+  <button class="tab-btn active" onclick="switchTab('gacha')">소환</button>
+  <button class="tab-btn" onclick="switchTab('deck')">카드 덱</button>
+  <button class="tab-btn" onclick="switchTab('battle')">전투</button>
+</nav>
 
-        <div class="side-panel">
-            <h3>🎲 상점 & 가챠</h3>
-            <button onclick="pullGacha()" class="btn-gacha">✨ 1회 뽑기 (100P)</button>
-            <div id="gacha-result" style="margin-top: 10px; font-weight: bold; font-size:14px;"></div>
-            
-            <h3 style="margin-top:30px;">🎒 내 카드 인벤토리</h3>
-            <div id="inventory-list">인벤토리가 비어 있습니다.</div>
-        </div>
+<!-- ─────────────── GACHA ─────────────── -->
+<div class="section active" id="tab-gacha">
+  <p class="section-title">카드 소환</p>
+
+  <div class="pity-info">
+    SR 보장: <span id="pity-sr">—</span>회 후 &nbsp;|&nbsp; SSR 보장: <span id="pity-ssr">—</span>회 후
+  </div>
+
+  <div class="gacha-actions">
+    <button class="gacha-btn single" onclick="doPull(1)">
+      1회 소환
+      <span class="gacha-cost">💎 100 젬</span>
+    </button>
+    <button class="gacha-btn ten" onclick="doPull(10)">
+      10회 소환
+      <span class="gacha-cost">💎 900 젬 (1회 무료!)</span>
+    </button>
+  </div>
+
+  <div id="gacha-result"></div>
+</div>
+
+<!-- ─────────────── DECK ─────────────── -->
+<div class="section" id="tab-deck">
+  <p class="section-title">보유 카드 (<span id="deck-count">0</span>장)</p>
+  <div id="deck-grid">
+    <div class="deck-empty">카드가 없습니다. 소환 탭에서 카드를 뽑아보세요!</div>
+  </div>
+</div>
+
+<!-- ─────────────── BATTLE ─────────────── -->
+<div class="section" id="tab-battle">
+  <p class="section-title">전투</p>
+
+  <div class="battle-select">
+    <select id="battle-card-select">
+      <option value="">— 카드를 선택하세요 —</option>
+    </select>
+    <button class="start-btn" onclick="startBattle()">⚔️ 전투 시작</button>
+  </div>
+
+  <div id="battle-arena">
+    <div class="arena-field">
+      <div class="combatant">
+        <div class="combatant-label player">플레이어</div>
+        <div id="player-card-display"></div>
+        <div class="hp-bar-wrap"><div class="hp-bar player" id="player-hp-bar" style="width:100%"></div></div>
+        <div class="hp-text" id="player-hp-text">—</div>
+      </div>
+      <div class="vs-text">VS</div>
+      <div class="combatant">
+        <div class="combatant-label enemy">적</div>
+        <div id="enemy-card-display"></div>
+        <div class="hp-bar-wrap"><div class="hp-bar enemy" id="enemy-hp-bar" style="width:100%"></div></div>
+        <div class="hp-text" id="enemy-hp-text">—</div>
+      </div>
     </div>
 
-    <script>
-        // 처음 로드 시 게임 시작
-        window.onload = startNewGame;
+    <div class="battle-actions">
+      <button class="action-btn atk" onclick="battleAction('attack')">🗡️ 공격</button>
+      <button class="action-btn skl" onclick="battleAction('skill')" id="skill-btn">✨ 스킬</button>
+      <button class="action-btn def" onclick="battleAction('defend')">🛡️ 방어</button>
+    </div>
 
-        async function startNewGame() {
-            document.getElementById('result-message').innerText = "";
-            document.getElementById('next-btn').style.display = "none";
-            document.getElementById('choice-area').style.display = "block";
-            document.getElementById('right-length-area').style.display = "none";
-            document.getElementById('right-title').innerText = "???";
-            document.getElementById('right-extract').innerText = "이 문서는 왼쪽 문서보다 본문이 더 길까요, 짧을까요?";
+    <div id="battle-log"></div>
+    <div id="battle-result-box" style="display:none"></div>
+  </div>
+</div>
 
-            try {
-                const response = await fetch('/api/new-game');
-                const data = await response.json();
-                
-                // 왼쪽 카드 정보 세팅 (글자 수 바로 공개)
-                document.getElementById('left-title').innerText = data.left_title;
-                document.getElementById('left-extract').innerText = data.left_extract;
-                document.getElementById('left-length').innerText = data.left_len;
+<div id="toast"></div>
 
-                // 오른쪽 카드 정보 미리 세팅 (제목과 본문 요약만 힌트로 제공)
-                document.getElementById('right-title').innerText = data.right_title;
-                document.getElementById('right-extract').innerText = data.right_extract;
+<script>
+// ─── Element emoji map
+const ELEM_EMOJI = { Fire:'🔥', Water:'💧', Wind:'🌪️', Earth:'⛰️', Dark:'🌑', Light:'✨' };
 
-                document.getElementById('points').innerText = data.points;
-                if(data.active_card) {
-                    document.getElementById('active-card-display').innerText = `✨ 장착 중: [${data.active_card.rarity}] ${data.active_card.title} (${data.active_card.bonus_multiplier}x 배율)`;
-                }
-            } catch (e) {
-                document.getElementById('result-message').innerText = "게임 데이터를 가져오지 못했습니다.";
-            }
-        }
+// ─── Helpers
+function toast(msg, dur=2400) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), dur);
+}
 
-        async function submitChoice(userChoice) {
-            const response = await fetch('/api/submit', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user_choice: userChoice })
-            });
-            const data = await response.json();
-            
-            // 결과 연출
-            document.getElementById('choice-area').style.display = "none";
-            document.getElementById('right-length-area').style.display = "block";
-            document.getElementById('right-length').innerText = data.right_len;
+function switchTab(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.currentTarget.classList.add('active');
+  if (name === 'deck') renderDeck();
+  if (name === 'battle') populateBattleSelect();
+}
 
-            const resEl = document.getElementById('result-message');
-            if(data.is_correct) {
-                resEl.innerText = `🎉 정답입니다! (+${data.earned_points}P 획득)`;
-                resEl.style.color = "green";
-            } else {
-                resEl.innerText = `❌ 틀렸습니다! (-5P)`;
-                resEl.style.color = "red";
-            }
+// ─── State
+let deckData = [];
+let battleState = null;
 
-            document.getElementById('points').innerText = data.points;
-            document.getElementById('next-btn').style.display = "inline-block";
-        }
+// ─── Status fetch
+async function fetchStatus() {
+  try {
+    const res = await fetch('/api/status');
+    const data = await res.json();
+    document.getElementById('gem-count').textContent = data.gems.toLocaleString();
+    deckData = data.deck;
+    const pityToSR  = 10 - data.pity_count;
+    const pityToSSR = 50 - data.pity_sr_count;
+    document.getElementById('pity-sr').textContent  = pityToSR;
+    document.getElementById('pity-ssr').textContent = pityToSSR;
+  } catch(e) { console.error(e); }
+}
 
-        async function pullGacha() {
-            const response = await fetch('/api/gacha', { method: 'POST' });
-            const data = await response.json();
-            
-            const resEl = document.getElementById('gacha-result');
-            if(!data.success) {
-                resEl.innerText = `⚠️ ${data.message}`;
-                resEl.style.color = "red";
-                return;
-            }
+// ─── Build card HTML
+function buildCardHTML(card, small=false) {
+  const emoji = ELEM_EMOJI[card.element] || '❓';
+  const trunc = (s, n) => s && s.length > n ? s.slice(0,n)+'…' : s;
+  return `
+    <div class="card ${card.rarity}" title="${card.title}">
+      <div class="card-inner">
+        <div class="card-header">
+          <span class="rarity-badge">${card.rarity}</span>
+          <span class="element-badge elem-${card.element}">${card.element}</span>
+        </div>
+        <div class="card-title">${card.title}</div>
+        <div class="card-art">${emoji}</div>
+        <div class="card-stats">
+          <div class="stat"><span class="stat-label">HP</span><span class="stat-val">${card.hp}</span></div>
+          <div class="stat"><span class="stat-label">ATK</span><span class="stat-val">${card.atk}</span></div>
+          <div class="stat"><span class="stat-label">DEF</span><span class="stat-val">${card.def}</span></div>
+          <div class="stat"><span class="stat-label">SPD</span><span class="stat-val">${card.spd}</span></div>
+        </div>
+        <div class="card-skill">
+          <div class="skill-name">${card.skill_name}</div>
+          <div>${trunc(card.skill_desc, 38)}</div>
+        </div>
+      </div>
+    </div>`;
+}
 
-            const card = data.card;
-            resEl.innerHTML = `🎁 획득: <span class="rarity-${card.rarity}">[${card.rarity}] ${card.title}</span> (배율: ${card.bonus_multiplier}x)`;
-            document.getElementById('points').innerText = data.points;
-            
-            updateInventory(data.inventory);
-        }
+// ─── Gacha pull
+async function doPull(n) {
+  const endpoint = n === 1 ? '/api/gacha' : '/api/gacha/ten';
+  const btn = event.currentTarget;
+  btn.disabled = true;
+  const orig = btn.innerHTML;
+  btn.innerHTML = `<span class="spinner"></span> 소환 중…`;
 
-        async function equipCard(index) {
-            await fetch('/api/equip', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ index: index })
-            });
-            startNewGame();
-        }
+  try {
+    const res = await fetch(endpoint, { method: 'POST' });
+    const data = await res.json();
 
-        function updateInventory(list) {
-            const invEl = document.getElementById('inventory-list');
-            if(list.length === 0) {
-                invEl.innerText = "인벤토리가 비어 있습니다.";
-                return;
-            }
-            invEl.innerHTML = "";
-            list.forEach((card, idx) => {
-                invEl.innerHTML += `
-                    <div class="inventory-item">
-                        <span class="rarity-${card.rarity}">[${card.rarity}] ${card.title}</span>
-                        <button onclick="equipCard(${idx})" style="padding:3px 7px; font-size:11px; background:#34495e;">장착</button>
-                    </div>
-                `;
-            });
-        }
-    </script>
+    if (data.error) {
+      toast('💎 ' + data.error);
+      btn.disabled = false; btn.innerHTML = orig;
+      return;
+    }
+
+    // Update UI
+    document.getElementById('gem-count').textContent = data.gems.toLocaleString();
+    const pityToSR  = 10 - data.pity_count;
+    const pityToSSR = 50 - data.pity_sr_count;
+    document.getElementById('pity-sr').textContent  = pityToSR;
+    document.getElementById('pity-ssr').textContent = pityToSSR;
+
+    const result = document.getElementById('gacha-result');
+    result.innerHTML = '';
+    for (const card of data.cards) {
+      result.insertAdjacentHTML('beforeend', buildCardHTML(card));
+    }
+
+    // Toast for rare pulls
+    const topRarity = data.cards.reduce((best, c) => {
+      const order = {N:0,R:1,SR:2,SSR:3};
+      return order[c.rarity] > order[best.rarity] ? c : best;
+    }, data.cards[0]);
+    if (topRarity.rarity === 'SSR') toast('🌟 SSR 획득! ' + topRarity.title, 3500);
+    else if (topRarity.rarity === 'SR') toast('✨ SR 획득! ' + topRarity.title, 2500);
+
+    deckData = [...deckData, ...data.cards];
+  } catch(e) {
+    toast('오류가 발생했습니다.');
+    console.error(e);
+  }
+
+  btn.disabled = false; btn.innerHTML = orig;
+}
+
+// ─── Deck
+function renderDeck() {
+  const grid = document.getElementById('deck-grid');
+  document.getElementById('deck-count').textContent = deckData.length;
+  if (!deckData.length) {
+    grid.innerHTML = '<div class="deck-empty">카드가 없습니다. 소환 탭에서 카드를 뽑아보세요!</div>';
+    return;
+  }
+  grid.innerHTML = deckData.map(c => buildCardHTML(c)).join('');
+}
+
+// ─── Battle select
+function populateBattleSelect() {
+  const sel = document.getElementById('battle-card-select');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— 카드를 선택하세요 —</option>';
+  for (const c of deckData) {
+    const opt = document.createElement('option');
+    opt.value = c.id;
+    opt.textContent = `[${c.rarity}] ${c.title} (HP:${c.hp} ATK:${c.atk})`;
+    sel.appendChild(opt);
+  }
+  if (cur) sel.value = cur;
+}
+
+async function startBattle() {
+  const sel = document.getElementById('battle-card-select');
+  if (!sel.value) { toast('카드를 선택해주세요!'); return; }
+
+  const btn = event.currentTarget;
+  btn.disabled = true; btn.textContent = '…';
+
+  try {
+    const res = await fetch('/api/battle/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ player_card_id: parseInt(sel.value) })
+    });
+    const data = await res.json();
+
+    if (!data.success) { toast(data.message); btn.disabled=false; btn.textContent='⚔️ 전투 시작'; return; }
+
+    battleState = data.battle;
+    renderBattle();
+    document.getElementById('battle-arena').classList.add('active');
+    setBattleActionsDisabled(false);
+    document.getElementById('battle-result-box').style.display = 'none';
+  } catch(e) { toast('오류 발생'); console.error(e); }
+
+  btn.disabled = false; btn.textContent = '⚔️ 전투 시작';
+}
+
+function renderBattle() {
+  if (!battleState) return;
+  const b = battleState;
+
+  // Player card mini display
+  if (b.player_card) {
+    document.getElementById('player-card-display').innerHTML = buildCardHTML(b.player_card);
+  }
+  if (b.enemy_card) {
+    document.getElementById('enemy-card-display').innerHTML = buildCardHTML(b.enemy_card);
+  }
+
+  // HP bars
+  const pPct = b.player_max_hp > 0 ? Math.max(0, (b.player_hp / b.player_max_hp) * 100) : 0;
+  const ePct = b.enemy_max_hp  > 0 ? Math.max(0, (b.enemy_hp  / b.enemy_max_hp)  * 100) : 0;
+  document.getElementById('player-hp-bar').style.width = pPct + '%';
+  document.getElementById('enemy-hp-bar').style.width  = ePct + '%';
+  document.getElementById('player-hp-text').textContent = `${b.player_hp} / ${b.player_max_hp}`;
+  document.getElementById('enemy-hp-text').textContent  = `${b.enemy_hp} / ${b.enemy_max_hp}`;
+
+  // Log
+  const logEl = document.getElementById('battle-log');
+  logEl.innerHTML = b.log.map(l => `<div class="log-entry">${l}</div>`).join('');
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+async function battleAction(action) {
+  setBattleActionsDisabled(true);
+  try {
+    const res = await fetch('/api/battle/action', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action })
+    });
+    const data = await res.json();
+    battleState = data.battle;
+    document.getElementById('gem-count').textContent = data.gems.toLocaleString();
+    renderBattle();
+
+    if (battleState.battle_over) {
+      const box = document.getElementById('battle-result-box');
+      box.style.display = 'block';
+      if (battleState.player_won) {
+        box.innerHTML = `<div class="battle-result win">🏆 승리! +${data.gems_earned} 💎 젬 획득!</div>`;
+      } else {
+        box.innerHTML = `<div class="battle-result lose">💀 패배... +${data.gems_earned} 💎 위로 젬</div>`;
+      }
+    } else {
+      setBattleActionsDisabled(false);
+    }
+  } catch(e) { toast('오류 발생'); setBattleActionsDisabled(false); console.error(e); }
+}
+
+function setBattleActionsDisabled(val) {
+  document.querySelectorAll('.action-btn').forEach(b => b.disabled = val);
+}
+
+// ─── Init
+fetchStatus();
+</script>
 </body>
 </html>
